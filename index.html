@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8. Sınıf İnkılap Tarihi İnteraktif Rehber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutral (Krem/Taş) with Subtle Teal/Blue Accents -->
+    <!-- Application Structure Plan: 
+        Yapı: Üstte sabit bir gezinme çubuğuna sahip tek sayfalık bir uygulama (SPA). İçerik, 'Ana Sayfa', 'Avrupa ve Osmanlı' (temel bağlam), 'Bir Kahraman Doğuyor' (Atatürk'ün hayatı), 'I. Dünya Savaşı' (ana çatışma), 'Önemli Kelimeler' (interaktif sözlük) ve 'Sınav Köşesi' (interaktif test) olmak üzere 6 tematik bölüme ayrılmıştır.
+        Etkileşimler: Gezinme çubuğundaki bağlantılara tıklandığında ilgili bölüm (section) gösterilir ve diğerleri gizlenir (JS ile). 'Avrupa ve Osmanlı' bölümünde devrimleri ve fikir akımlarını karşılaştırmak için sekmeli yapı. 'Bir Kahraman Doğuyor' bölümünde şehirlerin etkisini gösteren tıklanabilir kartlar. 'I. Dünya Savaşı' bölümünde cepheleri 'Taarruz', 'Savunma' ve 'Yardım' olarak filtreleyen butonlar ve anahtar cephelerin sonuçlarını görselleştiren bir Chart.js grafiği. 'Kelimeler' bölümü aranabilir bir sözlük. 'Sınav Köşesi' ise basit bir bilgi kartı (flashcard) testidir.
+        Gerekçe: Kaynak materyal (Markdown) yoğun metin içerir. Bu tematik ve interaktif yapı, öğrencinin doğrusal bir okuma yerine ihtiyaç duyduğu konuya doğrudan atlamasını (örn. "Sadece cepheleri tekrar edeceğim") sağlar. Etkileşimler (sekmeler, filtreler, grafik, test), pasif okuma yerine aktif katılımı teşvik eder, bilgiyi sentezler ve öğrenmeyi pekiştirir.
+    -->
+    <!-- Visualization & Content Choices: 
+        - Bilgi: Fransız İhtilali vs. Sanayi İnkılabı. Hedef: Karşılaştırma. Yöntem: İnteraktif Sekmeler (HTML/JS). Etkileşim: Sekmeye tıklayınca ilgili içerik gösterilir. Gerekçe: Kaydırma yapmadan kolay karşılaştırma.
+        - Bilgi: 4 Fikir Akımı. Hedef: Organize Etme/Karşılaştırma. Yöntem: Tıklanabilir Kartlar (HTML/JS). Etkileşim: Karta tıklayınca detay (amaç, savunucular, sonuç) gösterilir. Gerekçe: Basit bir listeden daha çekici.
+        - Bilgi: Atatürk'ün etkilendiği şehirler. Hedef: Keşfetme. Yöntem: 'Şehir Keşfi' tıklanabilir kartları (HTML/JS). Etkileşim: Şehir kartına tıklayınca okullar, olaylar ve etkileri gösterilir. Gerekçe: Bilgiyi mekansal olarak ilişkilendirir.
+        - Bilgi: I. Dünya Savaşı Cepheleri. Hedef: Organize Etme, Sentezleme. Yöntem: 1. Filtrelenebilir liste (JS). 2. Chart.js Çubuk Grafiği (Canvas). Etkileşim: 1. Filtre butonları (Taarruz/Savunma) cephe listesini günceller. 2. Grafik, kilit cephelerin (Kafkas, Çanakkale, Kanal) *başarı durumunu* (-1 Başarısız, 1 Başarılı) ve *M.K. etkisini* (0/1) görsel olarak karşılaştırır. Gerekçe: Filtreler karmaşık listeyi basitleştirir. Grafik, nitel bilgiyi (örn. "Kafkas Cephesi başarısız oldu") nicel bir görsele dökerek akılda kalıcılığı artırır. (Chart.js/Canvas)
+        - Bilgi: Mondros Md. 7 ve 24. Hedef: Vurgulama. Yöntem: Yüksek kontrastlı 'Tehlike' kartları (HTML/Tailwind). Etkileşim: Tıklayınca 'Yorumu' gösterir. Gerekçe: Sınav için en kritik bilgiler, öne çıkmalı. (HTML/JS)
+        - Bilgi: Önemli Kelimeler / Sınav İpuçları. Hedef: Tekrar ve Test. Yöntem: 1. İnteraktif Sözlük (HTML/JS). 2. Bilgi Kartı (Flashcard) Testi (HTML/JS). Etkileşim: 1. Arama kutusuna yazarak terimleri filtreleme. 2. Karta tıklayarak cevabı görme. Gerekçe: Aktif hatırlama (test), çalışmanın en etkili yollarından biridir. (HTML/JS)
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; }
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+        .nav-link {
+            cursor: pointer;
+            padding: 1rem 1.5rem;
+            transition: background-color 0.3s, color 0.3s;
+            border-bottom: 4px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            background-color: #F7FAFC; /* bg-gray-50 */
+            color: #2D3748; /* text-gray-800 */
+            border-bottom-color: #F6AD55; /* border-orange-400 */
+        }
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid #CBD5E0; /* border-gray-300 */
+            background-color: #FFFFFF; /* bg-white */
+            color: #2D3748; /* text-gray-800 */
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background-color: #2C5282; /* bg-blue-800 */
+            color: #FFFFFF; /* text-white */
+            border-color: #2C5282; /* border-blue-800 */
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .flashcard {
+            min-height: 150px;
+            cursor: pointer;
+            perspective: 1000px;
+        }
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .flashcard-front {
+            background-color: #EBF8FF; /* bg-blue-50 */
+            border: 2px dashed #90CDF4; /* border-blue-300 */
+            color: #2C5282; /* text-blue-800 */
+        }
+        .flashcard-back {
+            background-color: #C6F6D5; /* bg-green-100 */
+            color: #276749; /* text-green-800 */
+            transform: rotateY(180deg);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Header & Navigation -->
+    <header class="sticky top-0 z-50 bg-white shadow-md">
+        <nav class="container mx-auto flex flex-wrap justify-center items-center p-4">
+            <h1 class="text-xl md:text-2xl font-bold text-blue-800 mr-auto hidden md:block">İnkılap Tarihi Rehberi</h1>
+            <a class="nav-link active" data-target="ana-sayfa">Ana Sayfa</a>
+            <a class="nav-link" data-target="avrupa-osmanli">Avrupa ve Osmanlı</a>
+            <a class="nav-link" data-target="kahraman-doguyor">Bir Kahraman Doğuyor</a>
+            <a class="nav-link" data-target="ww1">I. Dünya Savaşı</a>
+            <a class="nav-link" data-target="kelimeler">Önemli Kelimeler</a>
+            <a class="nav-link" data-target="sinav-kosesi">Sınav Köşesi</a>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 md:p-8">
+
+        <!-- Section: Ana Sayfa -->
+        <section id="ana-sayfa" class="page-section active">
+            <div class="card text-center">
+                <h2 class="text-3xl font-bold text-blue-800 mb-4">8. Sınıf İnkılap Tarihi 1. Dönem 1. Sınav Rehberine Hoş Geldiniz!</h2>
+                <p class="text-lg text-gray-700 mb-6">
+                    Bu interaktif rehber, 8. Sınıf T.C. İnkılap Tarihi ve Atatürkçülük dersinin 1. Dönem 1. Sınav konularını (Genellikle "Bir Kahraman Doğuyor" ve "Milli Uyanış" ünitelerinin başı) kolayca öğrenmeniz ve tekrar etmeniz için tasarlanmıştır.
+                </p>
+                <p class="text-md text-gray-600">
+                    Yukarıdaki menüden çalışmak istediğiniz konuyu seçerek başlayabilirsiniz. Konuları keşfedin, interaktif grafik ve testlerle bilgilerinizi pekiştirin. Başarılar!
+                </p>
+            </div>
+        </section>
+
+        <!-- Section: Avrupa ve Osmanlı -->
+        <section id="avrupa-osmanli" class="page-section">
+            <h2 class="text-3xl font-bold text-blue-800 mb-6">Avrupa ve Osmanlı (20. Yüzyıl Başları)</h2>
+            <p class="text-lg text-gray-700 mb-8">
+                Bu bölümde, 19. ve 20. yüzyılda Avrupa'yı sarsan ve Osmanlı Devleti'ni derinden etkileyen iki büyük olayı ve devletin çöküşünü engellemek için ortaya atılan fikir akımlarını inceleyebilirsiniz.
+            </p>
+
+            <!-- Tabs: Revolutions -->
+            <div class="mb-8">
+                <div class="flex border-b border-gray-300">
+                    <button class="tab-btn active" data-tab="fransiz">Fransız İhtilali</button>
+                    <button class="tab-btn" data-tab="sanayi">Sanayi İnkılabı</button>
+                </div>
+                <div id="fransiz" class="tab-content card mt-4">
+                    <h3 class="text-2xl font-bold text-blue-700 mb-3">Fransız İhtilali (1789)</h3>
+                    <p class="mb-2">Tüm dünyaya "Hürriyet, Eşitlik, Adalet" kavramlarını yaydı.</p>
+                    <p class="font-bold text-red-600">En Önemli Sonucu: Milliyetçilik (Ulusçuluk)</p>
+                    <p class="mb-2">"Her milletin kendi bağımsız devletini kurma hakkı vardır." fikridir.</p>
+                    <p class="font-bold">Osmanlı'ya Etkisi (Olumsuz):</p>
+                    <p>Osmanlı gibi **çok uluslu (imparatorluk)** devletlerde azınlık isyanlarına yol açtı. Sırplar, Rumlar, Bulgarlar gibi milletler bağımsız olmak için isyan etti ve bu durum Balkanlar'da büyük toprak kayıplarına neden oldu.</p>
+                </div>
+                <div id="sanayi" class="tab-content card mt-4 hidden">
+                    <h3 class="text-2xl font-bold text-blue-700 mb-3">Sanayi İnkılabı (Endüstri Devrimi)</h3>
+                    <p class="mb-2">Makine gücüne dayalı seri üretime geçiştir. Bu durum iki büyük ihtiyaç doğurdu: **Hammadde** ve **Pazar**.</p>
+                    <p class="font-bold text-red-600">En Önemli Sonucu: Sömürgecilik (Emperyalizm)</p>
+                    <p class="mb-2">Güçlü devletlerin, zayıf devletlerin kaynaklarını kendi çıkarları için kullanmasıdır.</p>
+                    <p class="font-bold">Osmanlı'ya Etkisi (Olumsuz):</p>
+                    <p>Sanayileşemeyen Osmanlı, Avrupa'nın **açık pazarı** ve **hammadde kaynağı** haline geldi. Yerli esnaf iflas etti. Alınan dış borçlar ödenemeyince **Düyûn-ı Umûmiye (Genel Borçlar İdaresi)** kuruldu ve ekonomik bağımsızlık kaybedildi.</p>
+                </div>
+            </div>
+
+            <!-- Cards: Fikir Akımları -->
+            <div>
+                <h3 class="text-2xl font-bold text-blue-800 mb-4">Devleti Kurtarma Çabaları: Fikir Akımları</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="ideologies-container">
+                    <!-- Fikir akımları JS ile buraya yüklenecek -->
+                </div>
+                <div id="ideology-detail" class="card mt-6 hidden"></div>
+            </div>
+        </section>
+
+        <!-- Section: Bir Kahraman Doğuyor -->
+        <section id="kahraman-doguyor" class="page-section">
+            <h2 class="text-3xl font-bold text-blue-800 mb-6">Bir Kahraman Doğuyor: Mustafa Kemal</h2>
+            <p class="text-lg text-gray-700 mb-8">
+                Bu bölümde, Mustafa Kemal Atatürk'ün fikir dünyasını şekillendiren şehirleri ve I. Dünya Savaşı'ndan önceki önemli askeri görevlerini keşfedebilirsiniz. Bir şehre veya olaya tıklayarak detaylı bilgi alabilirsiniz.
+            </p>
+
+            <!-- City Explorer -->
+            <h3 class="text-2xl font-bold text-blue-800 mb-4">Etkilendiği Şehirler</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="cities-container">
+                <!-- Şehirler JS ile buraya yüklenecek -->
+            </div>
+            <div id="city-detail" class="card hidden"></div>
+
+            <!-- Early Military Career -->
+            <h3 class="text-2xl font-bold text-blue-800 mb-4">Önemli Askeri Görevleri (Savaş Öncesi)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="missions-container">
+                <!-- Görevler JS ile buraya yüklenecek -->
+            </div>
+            <div id="mission-detail" class="card mt-6 hidden"></div>
+        </section>
+
+        <!-- Section: I. Dünya Savaşı -->
+        <section id="ww1" class="page-section">
+            <h2 class="text-3xl font-bold text-blue-800 mb-6">I. Dünya Savaşı ve Osmanlı Devleti</h2>
+            <p class="text-lg text-gray-700 mb-8">
+                Bu bölümde, I. Dünya Savaşı'nın nedenlerini, Osmanlı Devleti'nin savaşa girişini ve savaştığı cepheleri interaktif olarak inceleyebilirsiniz. Cepheleri türüne göre filtreleyin ve grafik üzerinde sonuçları analiz edin.
+            </p>
+
+            <!-- WWI Front Explorer -->
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-blue-800 mb-4">Cephe Keşfi</h3>
+                <div class="flex justify-center gap-4 mb-6">
+                    <button class="tab-btn front-filter active" data-filter="all">Tüm Cepheler</button>
+                    <button class="tab-btn front-filter" data-filter="taarruz">Taarruz Cepheleri</button>
+                    <button class="tab-btn front-filter" data-filter="savunma">Savunma Cepheleri</button>
+                    <button class="tab-btn front-filter" data-filter="yardim">Yardım Cepheleri</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="fronts-container">
+                    <!-- Cepheler JS ile buraya yüklenecek -->
+                </div>
+                <div id="front-detail" class="card mt-6 hidden"></div>
+            </div>
+
+            <!-- WWI Chart -->
+            <div class="card mb-8">
+                <h3 class="text-2xl font-bold text-blue-800 mb-4 text-center">Anahtar Cephelerin Analizi</h3>
+                <p class="text-center text-gray-600 mb-4">Grafik, seçili cephelerin başarı durumunu (-1 = Başarısız, 1 = Başarılı) ve Mustafa Kemal'in o cephedeki etkisini (0 = Yok, 1 = Var) göstermektedir.</p>
+                <div class="chart-container">
+                    <canvas id="wwi-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Mondros -->
+            <div>
+                <h3 class="text-2xl font-bold text-red-800 mb-4">Savaşın Sonu: Mondros Ateşkes Antlaşması (30 Ekim 1918)</h3>
+                <p class="text-gray-700 mb-6">Osmanlı Devleti'ni **fiilen sona erdiren** bu antlaşmanın en tehlikeli maddelerine dikkat edin. Kartlara tıklayarak yorumlarını okuyabilirsiniz.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div id="madde7" class="card border-l-4 border-red-500 cursor-pointer">
+                        <h4 class="text-xl font-bold text-red-700">MADDE 7 (En Tehlikelisi!)</h4>
+                        <p class="font-semibold">"İtilaf Devletleri, güvenliklerini tehdit eden herhangi bir stratejik noktayı işgal edebilecektir."</p>
+                        <div class="mondros-comment hidden mt-3 p-3 bg-red-50 rounded">
+                            <p class="font-bold">Yorumu:</p>
+                            <p>Bu madde yoruma açıktır ve İtilaf Devletleri'nin **Anadolu'nun herhangi bir yerini işgal etmesine hukuki (yasal) bir kılıf** hazırlamıştır.</p>
+                        </div>
+                    </div>
+                    <div id="madde24" class="card border-l-4 border-red-500 cursor-pointer">
+                        <h4 class="text-xl font-bold text-red-700">MADDE 24</h4>
+                        <p class="font-semibold">"Vilayet-i Sitte'de (6 Doğu İli) bir karışıklık çıkarsa, bu iller işgal edilecektir."</p>
+                        <div class="mondros-comment hidden mt-3 p-3 bg-red-50 rounded">
+                            <p class="font-bold">Yorumu:</p>
+                            <p>Bu maddenin amacı, **Doğu Anadolu'da bir Ermeni devleti kurmaktır.** (Madde 7 varken bu özel maddeye gerek duyulması hedefin bu olduğunu gösterir).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Önemli Kelimeler -->
+        <section id="kelimeler" class="page-section">
+            <h2 class="text-3xl font-bold text-blue-800 mb-6">Önemli Kelimeler Sözlüğü</h2>
+            <p class="text-lg text-gray-700 mb-6">
+                Sınavda başarının anahtarı bu kavramları bilmektir. Aşağıdaki arama kutusunu kullanarak terimleri filtreleyebilirsiniz.
+            </p>
+            <input type="text" id="glossary-search" class="w-full p-3 border border-gray-300 rounded-lg mb-6" placeholder="Aramak için bir terim yazın (örn: Milliyetçilik)...">
+            <div id="glossary-container" class="space-y-4">
+                <!-- Sözlük JS ile buraya yüklenecek -->
+            </div>
+        </section>
+
+        <!-- Section: Sınav Köşesi -->
+        <section id="sinav-kosesi" class="page-section">
+            <h2 class="text-3xl font-bold text-blue-800 mb-6">Sınav Köşesi: Bilgini Test Et!</h2>
+            <p class="text-lg text-gray-700 mb-8">
+                Aşağıdaki bilgi kartlarını kullanarak öğrendiklerinizi test edin. Cevabı görmek için kartın üzerine tıklayın. Yeni bir soru için "Sonraki Soru" butonuna basın.
+            </p>
+
+            <div id="quiz-container" class="mb-6">
+                <div class="flashcard w-full md:w-2/3 mx-auto" id="flashcard">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <p class="text-xl font-semibold" id="quiz-question"></p>
+                        </div>
+                        <div class="flashcard-back">
+                            <p class="text-xl font-bold" id="quiz-answer"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button id="next-quiz-btn" class="tab-btn active">Sonraki Soru</button>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pageData = {
+                ideologies: {
+                    osmanlicilik: {
+                        title: "Osmanlıcılık",
+                        details: "<strong>Amaç:</strong> Din, dil, ırk ayrımı yapmadan herkesi 'Osmanlı Vatandaşı' sayarak devleti bir arada tutmak. <br><strong>Savunucuları:</strong> Jön Türkler (Namık Kemal, Ziya Paşa). <br><strong>Geçersizliği:</strong> Balkan Savaşları'nda Balkan uluslarının Osmanlı'ya saldırmasıyla bu fikir çöktü."
+                    },
+                    islamcilik: {
+                        title: "İslamcılık (Ümmetçilik)",
+                        details: "<strong>Amaç:</strong> Tüm Müslümanları Halife'nin (Padişahın) etrafında birleştirmek. <br><strong>Savunucuları:</strong> II. Abdülhamit, Mehmet Akif Ersoy. <br><strong>Geçersizliği:</strong> I. Dünya Savaşı'nda bazı Arapların İngilizlerle işbirliği yapmasıyla bu fikir çöktü."
+                    },
+                    turkculuk: {
+                        title: "Türkçülük (Turancılık)",
+                        details: "<strong>Amaç:</strong> Tüm dünyadaki Türkleri tek bir bayrak altında toplamak (Turancılık) veya Osmanlı sınırları içindeki Türklerin bilincini artırmak (Türkçülük). <br><strong>Savunucuları:</strong> Ziya Gökalp, Mehmet Emin Yurdakul. <br><strong>Etkisi:</strong> Milli Mücadele'nin ve yeni Türkiye Cumhuriyeti'nin temel felsefesi oldu."
+                    },
+                    baticilik: {
+                        title: "Batıcılık (Garpçılık)",
+                        details: "<strong>Amaç:</strong> Avrupa'daki bilimsel ve teknolojik gelişmeleri (Batı'yı) örnek alarak devleti modernleştirmek. <br><strong>Savunucuları:</strong> Tevfik Fikret, Celal Nuri. <br><strong>Etkisi:</strong> Atatürk'ün yaptığı inkılapların (yeniliklerin) temelini oluşturdu."
+                    }
+                },
+                cities: {
+                    selanik: {
+                        title: "Selanik (Doğduğu Şehir)",
+                        details: "<strong>Yapısı:</strong> Çok uluslu (Türk, Rum, Bulgar, Yahudi vb.), liman kenti, Avrupa'ya açık. <br><strong>Etkisi:</strong> Farklı kültürleri tanıdı, <strong>farklı fikirlere açık</strong> ve <strong>yenilikçi</strong> bir bakış açısı kazandı. <br><strong>Okulları:</strong> Şemsi Efendi Mektebi (Modern), Askeri Rüştiye (Askerliğe adım)."
+                    },
+                    manastir: {
+                        title: "Manastır (Lise Yılları)",
+                        details: "<strong>Okul:</strong> Manastır Askeri İdadisi (Lise). <br><strong>Etkisi:</strong> Arkadaşı <strong>Ömer Naci</strong> sayesinde edebiyat ve hitabete ilgi duydu. Tarih öğretmeni <strong>Mehmet Tevfik Bey</strong> sayesinde tarih bilinci gelişti. Fransız yazarları (Voltaire, Rousseau) okuyarak <strong>milliyetçilik, eşitlik, özgürlük</strong> fikirlerini öğrendi. <strong>Vatanseverliği</strong> pekişti."
+                    },
+                    istanbul: {
+                        title: "İstanbul (Akademi Yılları)",
+                        details: "<strong>Okullar:</strong> Harp Okulu (Teğmen) ve Harp Akademisi (Kurmay Yüzbaşı). <br><strong>Etkisi:</strong> Ülkenin başkenti olarak devlet sorunlarını yakından takip etti. Arkadaşlarıyla gizli toplantılar yaptı ve gazete çıkardı. Bu, <strong>liderlik</strong> ve <strong>teşkilatçılık</strong> özelliklerini gösterir."
+                    },
+                    sam: {
+                        title: "Şam (İlk Görev Yeri)",
+                        details: "<strong>Görev:</strong> 5. Ordu. <br><strong>Etkisi:</strong> Devlet yönetimindeki bozuklukları (yolsuzluk) yakından gördü. Çözüm için <strong>'Vatan ve Hürriyet Cemiyeti'</strong>ni kurdu. Bu, onun <strong>teşkilatçılık</strong> özelliğinin ilk somut örneğidir."
+                    },
+                    sofya: {
+                        title: "Sofya (Diplomatik Görev)",
+                        details: "<strong>Görev:</strong> Askeri Ataşe (Ataşemiliter). <br><strong>Etkisi:</strong> Avrupalı diplomatlarla tanıştı, <strong>diplomasiyi</strong> öğrendi. Bulgar Meclisi'ni inceleyerek <strong>demokrasi</strong> ve <strong>parlamenter sistem</strong> hakkındaki fikirleri güçlendi. Avrupa'daki sosyal yaşantıyı gördü (Batıcılık)."
+                    }
+                },
+                missions: {
+                    mart31: {
+                        title: "31 Mart Vakası (Olayı)",
+                        details: "<strong>Olay:</strong> İstanbul'da II. Meşrutiyet'e (Anayasa) karşı çıkanların (gericilerin) çıkardığı bir isyandır. <br><strong>M. Kemal'in Rolü:</strong> İsyanı bastırmak için Selanik'ten gelen <strong>'Hareket Ordusu'</strong>nda Kurmay Başkanı olarak görev aldı. <br><strong>Önemi:</strong> Mustafa Kemal'in <strong>yenilik yanlısı (inkılapçı)</strong> ve <strong>demokrasi yanlısı</strong> olduğunu gösterir."
+                    },
+                    trablusgarp: {
+                        title: "Trablusgarp Savaşı (1911)",
+                        details: "<strong>Neden:</strong> İtalya'nın sömürge arayışıyla Osmanlı'nın son Kuzey Afrika toprağına saldırması. <br><strong>M. Kemal'in Rolü:</strong> <strong>Gönüllü olarak</strong> ve <strong>kılık değiştirerek</strong> (Gazeteci Şerif Bey) bölgeye gitti. <strong>Yerli halkı İtalyanlara karşı örgütledi</strong> (teşkilatçılık). <br><strong>Önemi:</strong> Mustafa Kemal'in <strong>ilk askeri başarısıdır</strong> ve <strong>teşkilatçılık</strong> yeteneğini kanıtlamıştır."
+                    },
+                    balkan: {
+                        title: "Balkan Savaşları (1912-1913)",
+                        details: "<strong>Olay:</strong> Balkan uluslarının Osmanlı'ya saldırması ve Osmanlı'nın ağır yenilgisi. <br><strong>M. Kemal'in Rolü:</strong> Gelibolu (Bolayır) bölgesinde görev yaptı. Edirne'nin geri alınışında rol aldı. <br><strong>Önemi (Dersler):</strong> Ordunun siyasete karışmasının felaketlere yol açtığını gördü (Bu yüzden ileride orduyu siyasetten ayırdı). Çanakkale Boğazı'nın stratejik önemini kavradı."
+                    }
+                },
+                fronts: {
+                    kafkas: {
+                        title: "Kafkas Cephesi",
+                        type: "taarruz",
+                        details: "<strong>Amaç:</strong> Kars, Ardahan, Batum'u geri almak ve Turan'a ulaşmak. <br><strong>Sonuç:</strong> Sarıkamış Faciası (kış şartları). Ruslar Doğu Anadolu'yu işgal etti. <br><strong>M. Kemal'in Rolü:</strong> Çanakkale'den sonra atandı, <strong>Muş ve Bitlis'i geri aldı.</strong> <br><strong>Kapanış:</strong> Rusya'daki Bolşevik İhtilali sonrası Brest-Litowsk Antlaşması ile kapandı. (Toprak kazandığımız tek cephe)."
+                    },
+                    kanal: {
+                        title: "Kanal (Süveyş) Cephesi",
+                        type: "taarruz",
+                        details: "<strong>Amaç:</strong> İngiltere'nin sömürge yolunu (Süveyş Kanalı) kesmek. <br><strong>Sonuç:</strong> Başarısızlıkla sonuçlandı. İngilizler karşı saldırıya geçerek Filistin'e ilerledi."
+                    },
+                    canakkale: {
+                        title: "ÇANAKKALE CEPHESİ (EN ÖNEMLİSİ!)",
+                        type: "savunma",
+                        details: "<strong>İtilaf Amacı:</strong> İstanbul'u alıp Osmanlı'yı bitirmek, Rusya'ya yardım götürmek. <br><strong>Sonuç:</strong> Deniz (18 Mart) ve Kara (Anafartalar) savaşlarında büyük Türk zaferi. <br><strong>M. Kemal'in Rolü:</strong> <strong>Anafartalar Kahramanı</strong> oldu. 'Ben size taarruzu emretmiyorum, ölmeyi emretmiyorum!' emri savaşın kaderini değiştirdi. Tüm yurtta tanındı ve <strong>Milli Mücadele lideri</strong> olmasının yolunu açtı. <br><strong>Savaşın Sonuçları:</strong> Savaş en az 2 yıl uzadı, Rusya'da İhtilal çıktı ve savaştan çekildi."
+                    },
+                    irak: {
+                        title: "Irak Cephesi",
+                        type: "savunma",
+                        details: "<strong>Neden:</strong> İngilizlerin Irak petrollerini ele geçirme ve Rusya'ya yardım götürme isteği. <br><strong>Önemli Olay:</strong> <strong>Kut'ül Amare</strong>'de Osmanlı ordusu İngiliz birliğini esir alsa da, sonuçta Bağdat kaybedildi."
+                    },
+                    suriyefilistin: {
+                        title: "Suriye - Filistin Cephesi",
+                        type: "savunma",
+                        details: "<strong>Olay:</strong> Kanal Cephesi'nin devamıdır. İngiliz ilerleyişini durdurma amaçlı. <br><strong>M. Kemal'in Rolü:</strong> I. Dünya Savaşı'ndaki son görevi. Yıldırım Orduları Komutanı olarak, orduyu Halep'in kuzeyine çekerek <strong>Anadolu sınırında bir savunma hattı kurdu.</strong>"
+                    },
+                    hicazyemen: {
+                        title: "Hicaz - Yemen Cephesi",
+                        type: "savunma",
+                        details: "<strong>Amaç:</strong> Kutsal toprakları (Mekke, Medine) korumak. <br><strong>Önemli Olay:</strong> Medine Müdafii <strong>Fahrettin Paşa</strong>'nın kahramanca direnişi. <br><strong>Sonuç:</strong> Bazı Arapların İngilizlerle işbirliği yapması, <strong>İslamcılık (Ümmetçilik)</strong> fikrinin çöktüğünü gösterdi."
+                    },
+                    galicya: {
+                        title: "Galiçya / Romanya / Makedonya",
+                        type: "yardim",
+                        details: "<strong>Amaç:</strong> Müttefiklerimiz olan Almanya ve Avusturya-Macaristan'a yardım etmek. <br><strong>Önemi:</strong> Osmanlı toprakları dışında savaşılan cephelerdir."
+                    }
+                },
+                glossary: [
+                    { term: "Milliyetçilik (Ulusçuluk)", def: "Her milletin kendi bağımsız devletini kurma fikri. Fransız İhtilali ile yayıldı. Osmanlı gibi çok uluslu devletleri parçaladı." },
+                    { term: "Sömürgecilik (Emperyalizm)", def: "Güçlü bir devletin, zayıf bir devletin yeraltı ve yerüstü kaynaklarını sömürmesi. Sanayi İnkılabı'nın hammadde ve pazar ihtiyacından doğdu." },
+                    { term: "Çok Uluslu (İmparatorluk)", def: "İçinde birden fazla milleti (ulusu) barındıran devlet yapısı (Örn: Osmanlı Devleti)." },
+                    { term: "Kapitülasyonlar", def: "Avrupalı devletlere verilen ekonomik, hukuki ve ticari ayrıcalıklar. Osmanlı ekonomisini dışa bağımlı hale getirdi." },
+                    { term: "Düyûn-ı Umûmiye", def: "Genel Borçlar İdaresi. Osmanlı'nın dış borçlarını ödeyememesi üzerine Avrupalıların kurduğu, Osmanlı gelirlerine (vergi, liman vb.) el koyan kurum. Ekonomik bağımsızlığı yok etti." },
+                    { term: "Hasta Adam", def: "Avrupalıların, çöküş sürecindeki Osmanlı Devleti için kullandığı tabir." },
+                    { term: "Tanzimat Fermanı", def: "Padişahın kanun gücünü (hukuk üstünlüğü) kabul ettiği, tüm vatandaşları eşit saymayı amaçlayan ferman (1839)." },
+                    { term: "Islahat Fermanı", def: "Avrupalıların baskısıyla yayınlanan, gayrimüslimlere (azınlıklara) daha fazla hak veren ferman (1856)." },
+                    { term: "Meşrutiyet", def: "Padişahın yanında halkın seçtiği bir meclisin (Mebusan Meclisi) ve anayasanın (Kanun-i Esasi) olduğu yönetim biçimi." },
+                    { term: "İttihat ve Terakki", def: "II. Meşrutiyet'in ilan edilmesini sağlayan, I. Dünya Savaşı sırasında devleti yöneten siyasi cemiyet/parti." },
+                    { term: "Ataşemiliter", def: "Askeri Ataşe. Başka bir ülkede görev yapan, askeri konularda elçilik yapan subay (M. Kemal - Sofya)." },
+                    { term: "31 Mart Vakası", def: "Meşrutiyet'e (anayasaya) karşı çıkanların İstanbul'da başlattığı isyan. Hareket Ordusu tarafından bastırıldı." },
+                    { term: "Hareket Ordusu", def: "31 Mart Vakası'nı bastırmak için Selanik'ten gelen, M. Kemal'in Kurmay Başkanı olduğu ordu." },
+                    { term: "Tehcir (Sevk ve İskan) Kanunu", def: "I. Dünya Savaşı'nda Kafkas Cephesi'nde Ruslarla işbirliği yapan Ermenilerin, savaş bölgesi olmayan Suriye'ye zorunlu göç ettirilmesi kanunu." },
+                    { term: "Vilayet-i Sitte", def: "Altı Doğu İli (Sivas, Erzurum, Van, Bitlis, Diyarbakır, Elazığ). Mondros'un 24. maddesi bu illerle ilgilidir." },
+                    { term: "Mondros Madde 7", def: "İtilaf Devletleri, güvenliklerini tehdit eden herhangi bir stratejik noktayı işgal edebilecektir. (İşgallere hukuki kılıf)." },
+                    { term: "Mondros Madde 24", def: "Vilayet-i Sitte'de (6 Doğu İli) karışıklık çıkarsa işgal edilecektir. (Doğu'da bir Ermeni devleti kurma amacı)." }
+                ],
+                quiz: [
+                    { q: "Osmanlı'nın ekonomik bağımsızlığını kaybetmesine neden olan ve gelirlerine el koyan kurumun adı nedir?", a: "Düyûn-ı Umûmiye (Genel Borçlar İdaresi)" },
+                    { q: "Mustafa Kemal'in 'Ben size taarruzu değil, ölmeyi emrediyorum!' dediği cephe hangisidir?", a: "Çanakkale Cephesi (Conkbayırı)" },
+                    { q: "Mondros Ateşkes Antlaşması'nda 'Anadolu'nun herhangi bir yerini işgal etme' yetkisi veren madde hangisidir?", a: "Madde 7" },
+                    { q: "Mustafa Kemal'in yerli halkı örgütleyerek ilk askeri başarısını kazandığı savaş hangisidir?", a: "Trablusgarp Savaşı" },
+                    { q: "Mustafa Kemal'in 'Vatan ve Hürriyet Cemiyeti'ni kurduğu, ilk görev yeri olan şehir hangisidir?", a: "Şam" },
+                    { q: "Fransız İhtilali'nin yaydığı hangi fikir akımı Osmanlı gibi çok uluslu devletleri parçalamıştır?", a: "Milliyetçilik (Ulusçuluk)" },
+                    { q: "Mondros'un 24. maddesinin amacı nedir?", a: "Doğu Anadolu'da (Vilayet-i Sitte) bir Ermeni devleti kurmak." },
+                    { q: "Mustafa Kemal'in demokrasi ve parlamenter sistemi incelediği, diplomatik görevle gittiği şehir hangisidir?", a: "Sofya" },
+                    { q: "I. Dünya Savaşı'nda bazı Arapların İngilizlerle işbirliği yapması hangi fikir akımının çöktüğünü kanıtlamıştır?", a: "İslamcılık (Ümmetçilik)" },
+                    { q: "Mustafa Kemal'in Milli Mücadele lideri olarak tanınmasını sağlayan cephe hangisidir?", a: "Çanakkale Cephesi" }
+                ],
+                quiz: [
+                    { q: "Osmanlı'nın ekonomik bağımsızlığını kaybetmesine neden olan ve gelirlerine el koyan kurumun adı nedir?", a: "Düyûn-ı Umûmiye (Genel Borçlar İdaresi)" },
+                    { q: "Kut'ül Amare zaferinin kazanıldığı cephe hangisidir?", a: "Irak Cephesi" },
+                    { q: "Tüm Müslümanları Halife etrafında birleştirmeyi amaçlayan fikir akımı hangisidir?", a: "İslamcılık (Ümmetçilik)" },
+                    { q: "Milli Mücadele'nin ve yeni Türkiye Cumhuriyeti'nin temel felsefesini oluşturan fikir akımı hangisidir?", a: "Türkçülük" },
+                    { q: "Avrupa'daki bilimsel ve teknolojik gelişmeleri örnek almayı amaçlayan fikir akımı hangisidir?", a: "Batıcılık (Garpçılık)" },
+                    { q: "Atatürk'ün yaptığı inkılapların temelini hangi fikir akımı oluşturmuştur?", a: "Batıcılık" },
+                    { q: "Mustafa Kemal'in doğduğu şehir hangisidir ve bu şehrin en belirgin özelliği nedir?", a: "Selanik, çok uluslu ve liman kenti olması" },
+                    { q: "Mustafa Kemal'in modern eğitim aldığı ilk okul hangisidir?", a: "Şemsi Efendi Mektebi" },
+                    { q: "Mustafa Kemal'in lise eğitimini aldığı (Askeri İdadi) şehir hangisidir?", a: "Manastır" },
+                    { q: "Mustafa Kemal'in edebiyat ve hitabete ilgi duymasını sağlayan arkadaşı kimdir?", a: "Ömer Naci" },
+                    { q: "Mustafa Kemal'in Fransız yazarları (Voltaire, Rousseau) okuyarak milliyetçilik, eşitlik gibi fikirleri öğrendiği şehir hangisidir?", a: "Manastır" },
+                    { q: "Mustafa Kemal'in Harp Okulu ve Harp Akademisi'ni okuduğu şehir hangisidir?", a: "İstanbul" },
+                    { q: "Mustafa Kemal'in 'Kurmay Yüzbaşı' rütbesiyle mezun olduğu okul hangisidir?", a: "Harp Akademisi (İstanbul)" },
+                    { q: "Mustafa Kemal'in ilk görev yeri olan Şam'da kurduğu cemiyetin adı nedir?", a: "Vatan ve Hürriyet Cemiyeti" },
+                    { q: "Mustafa Kemal'in Askeri Ataşe (Ataşemiliter) olarak görev yaptığı ve diplomasiyi öğrendiği şehir hangisidir?", a: "Sofya" },
+                    { q: "II. Meşrutiyet'e karşı çıkanların isyanı olan 31 Mart Vakası'nı bastıran ordunun adı nedir?", a: "Hareket Ordusu" },
+                    { q: "Mustafa Kemal'in 31 Mart Vakası'ndaki rolü onun hangi kişilik özelliğini gösterir?", a: "Yenilik yanlısı (inkılapçı) / Demokrasi yanlısı" },
+                    { q: "İtalya'nın sömürge arayışıyla 1911'de Osmanlı'ya saldırdığı savaş hangisidir?", a: "Trablusgarp Savaşı" },
+                    { q: "Mustafa Kemal, Trablusgarp Savaşı'na hangi takma isimle gönüllü olarak katılmıştır?", a: "Gazeteci Şerif Bey" },
+                    { q: "Mustafa Kemal'in Trablusgarp'ta yerli halkı örgütlemesi hangi kişilik özelliğini gösterir?", a: "Teşkilatçılık" },
+                    { q: "Mustafa Kemal'in Çanakkale Boğazı'nın stratejik önemini kavradığı savaş hangisidir?", a: "Balkan Savaşları" },
+                    { q: "Osmanlı Devleti'nin I. Dünya Savaşı'nda savaştığı taarruz cepheleri hangileridir?", a: "Kafkas ve Kanal Cepheleri" },
+                    { q: "Almanya'nın isteğiyle açılan ve Süveyş Kanalı'nı kesmeyi amaçlayan cephe hangisidir?", a: "Kanal Cephesi" },
+                    { q: "Mustafa Kemal'in Çanakkale'den sonra görev aldığı ve Muş ile Bitlis'i Ruslardan geri aldığı cephe hangisidir?", a: "Kafkas Cephesi" },
+                    { q: "I. Dünya Savaşı'nın süresini en az 2 yıl uzatan cephe hangisidir?", a: "Çanakkale Cephesi" },
+                    { q: "Rusya'da Bolşevik İhtilali'nin çıkmasına ve Rusya'nın savaştan çekilmesine neden olan cephe hangisidir?", a: "Çanakkale Cephesi" },
+                    { q: "İngilizlerin Irak petrollerini ele geçirmek için açtığı cephe hangisidir?", a: "Irak Cephesi" },
+                    { q: "Mustafa Kemal'in I. Dünya Savaşı'ndaki son görevi nedir ve hangi cephededir?", a: "Yıldırım Orduları Grubu Komutanlığı - Suriye-Filistin Cephesi" },
+                    { q: "Mustafa Kemal'in Anadolu sınırında bir savunma hattı kurduğu cephe hangisidir?", a: "Suriye-Filistin Cephesi" },
+                    { q: "Kutsal toprakları (Mekke, Medine) korumak amacıyla savaşılan cephe hangisidir?", a: "Hicaz-Yemen Cephesi" },
+                    { q: "Medine Müdafii olarak bilinen kahraman komutan kimdir?", a: "Fahrettin Paşa" },
+                    { q: "Osmanlı'nın müttefiklerine yardım etmek için toprakları dışında savaştığı cepheler hangileridir?", a: "Galiçya, Romanya, Makedonya" },
+                    { q: "Padişahın kanun gücünü (hukuk üstünlüğü) kabul ettiği 1839 tarihli ferman nedir?", a: "Tanzimat Fermanı" },
+                    { q: "Avrupalıların baskısıyla 1856'da gayrimüslimlere daha fazla hak veren ferman nedir?", a: "Islahat Fermanı" },
+                    { q: "Padişahın yanında anayasa ve halk meclisinin olduğu yönetim biçimine ne ad verilir?", a: "Meşrutiyet" },
+                    { q: "II. Meşrutiyet'in ilanını sağlayan siyasi cemiyetin adı nedir?", a: "İttihat ve Terakki" },
+                    { q: "Kafkas Cephesi'nde Ruslarla işbirliği yapan Ermenilerin zorunlu göç ettirilmesi kanununun adı nedir?", a: "Tehcir (Sevk ve İskan) Kanunu" }
+                ]
+            };
+ 
+            // --- Navigation Logic ---
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pageSections = document.querySelectorAll('.page-section');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const targetId = e.target.dataset.target;
+
+                    pageSections.forEach(section => {
+                        section.classList.remove('active');
+                        if (section.id === targetId) {
+                            section.classList.add('active');
+                        }
+                    });
+
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+
+            // --- Section: Avrupa ve Osmanlı ---
+            const tabBtns = document.querySelectorAll('.tab-btn[data-tab]');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetId = e.target.dataset.tab;
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                        if (content.id === targetId) {
+                            content.classList.remove('hidden');
+                        }
+                    });
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+
+            const ideologiesContainer = document.getElementById('ideologies-container');
+            const ideologyDetail = document.getElementById('ideology-detail');
+            Object.values(pageData.ideologies).forEach(ideo => {
+                const card = document.createElement('div');
+                card.className = 'card cursor-pointer';
+                card.innerHTML = `<h4 class="text-xl font-bold text-blue-700">${ideo.title}</h4>`;
+                card.addEventListener('click', () => {
+                    ideologyDetail.innerHTML = ideo.details;
+                    ideologyDetail.classList.remove('hidden');
+                });
+                ideologiesContainer.appendChild(card);
+            });
+
+            // --- Section: Bir Kahraman Doğuyor ---
+            const citiesContainer = document.getElementById('cities-container');
+            const cityDetail = document.getElementById('city-detail');
+            Object.values(pageData.cities).forEach(city => {
+                const card = document.createElement('div');
+                card.className = 'card cursor-pointer';
+                card.innerHTML = `<h4 class="text-xl font-bold text-blue-700">${city.title}</h4>`;
+                card.addEventListener('click', () => {
+                    cityDetail.innerHTML = `<h4 class="text-xl font-bold text-blue-700 mb-3">${city.title}</h4>${city.details}`;
+                    cityDetail.classList.remove('hidden');
+                });
+                citiesContainer.appendChild(card);
+            });
+
+            const missionsContainer = document.getElementById('missions-container');
+            const missionDetail = document.getElementById('mission-detail');
+            Object.values(pageData.missions).forEach(mission => {
+                const card = document.createElement('div');
+                card.className = 'card cursor-pointer';
+                card.innerHTML = `<h4 class="text-xl font-bold text-blue-700">${mission.title}</h4>`;
+                card.addEventListener('click', () => {
+                    missionDetail.innerHTML = `<h4 class="text-xl font-bold text-blue-700 mb-3">${mission.title}</h4>${mission.details}`;
+                    missionDetail.classList.remove('hidden');
+                });
+                missionsContainer.appendChild(card);
+            });
+
+            // --- Section: I. Dünya Savaşı ---
+            const frontFilters = document.querySelectorAll('.front-filter');
+            const frontsContainer = document.getElementById('fronts-container');
+            const frontDetail = document.getElementById('front-detail');
+
+            function renderFronts(filter = 'all') {
+                frontsContainer.innerHTML = '';
+                frontDetail.classList.add('hidden');
+                Object.values(pageData.fronts).forEach(front => {
+                    if (filter === 'all' || front.type === filter) {
+                        const card = document.createElement('div');
+                        card.className = 'card cursor-pointer';
+                        card.innerHTML = `<h4 class="text-xl font-bold ${front.type === 'taarruz' ? 'text-red-700' : 'text-green-700'}">${front.title}</h4><span class="text-sm text-gray-500 uppercase">${front.type}</span>`;
+                        card.addEventListener('click', () => {
+                            frontDetail.innerHTML = `<h4 class="text-xl font-bold text-blue-700 mb-3">${front.title}</h4>${front.details}`;
+                            frontDetail.classList.remove('hidden');
+                        });
+                        frontsContainer.appendChild(card);
+                    }
+                });
+            }
+
+            frontFilters.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const filter = e.target.dataset.filter;
+                    renderFronts(filter);
+                    frontFilters.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+
+            const mondrosCards = [document.getElementById('madde7'), document.getElementById('madde24')];
+            mondrosCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const comment = card.querySelector('.mondros-comment');
+                    comment.classList.toggle('hidden');
+                });
+            });
+
+            renderFronts();
+
+            // Chart.js Logic
+            const ctx = document.getElementById('wwi-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Kafkas Cephesi', 'Kanal Cephesi', 'Çanakkale Cephesi', 'Irak Cephesi', 'Suriye-Filistin'],
+                    datasets: [
+                        {
+                            label: 'Cephe Başarı Durumu (-1 = Başarısız, 1 = Başarılı)',
+                            data: [-1, -1, 1, -1, -1],
+                            backgroundColor: 'rgba(211, 63, 63, 0.6)', // Red
+                            borderColor: 'rgba(211, 63, 63, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Mustafa Kemal Etkisi (0 = Yok, 1 = Var)',
+                            data: [1, 0, 1, 0, 1],
+                            backgroundColor: 'rgba(44, 82, 130, 0.6)', // Blue
+                            borderColor: 'rgba(44, 82, 130, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        if (context.datasetIndex === 0) {
+                                            label += context.parsed.y === 1 ? 'Başarılı' : 'Başarısız';
+                                        } else {
+                                            label += context.parsed.y === 1 ? 'Var' : 'Yok';
+                                        }
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- Section: Önemli Kelimeler ---
+            const glossarySearch = document.getElementById('glossary-search');
+            const glossaryContainer = document.getElementById('glossary-container');
+
+            function renderGlossary(filter = '') {
+                glossaryContainer.innerHTML = '';
+                const lowerFilter = filter.toLowerCase();
+                pageData.glossary.forEach(item => {
+                    if (item.term.toLowerCase().includes(lowerFilter) || item.def.toLowerCase().includes(lowerFilter)) {
+                        const div = document.createElement('div');
+                        div.className = 'card';
+                        div.innerHTML = `<h4 class="text-lg font-bold text-blue-700">${item.term}</h4><p>${item.def}</p>`;
+                        glossaryContainer.appendChild(div);
+                    }
+                });
+            }
+
+            glossarySearch.addEventListener('input', (e) => {
+                renderGlossary(e.target.value);
+            });
+
+            renderGlossary();
+
+            // --- Section: Sınav Köşesi ---
+            const flashcard = document.getElementById('flashcard');
+            const quizQuestion = document.getElementById('quiz-question');
+            const quizAnswer = document.getElementById('quiz-answer');
+            const nextQuizBtn = document.getElementById('next-quiz-btn');
+            let currentQuizIndex = 0;
+
+            function loadQuiz(index) {
+                flashcard.classList.remove('flipped');
+                setTimeout(() => {
+                    quizQuestion.textContent = pageData.quiz[index].q;
+                    quizAnswer.textContent = pageData.quiz[index].a;
+                }, 300); // Wait for flip back
+            }
+
+            flashcard.addEventListener('click', () => {
+                flashcard.classList.toggle('flipped');
+            });
+
+            nextQuizBtn.addEventListener('click', () => {
+                currentQuizIndex = (currentQuizIndex + 1) % pageData.quiz.length;
+                loadQuiz(currentQuizIndex);
+            });
+
+            loadQuiz(0);
+        });
+    </script>
+</body>
+</html>
+
+
